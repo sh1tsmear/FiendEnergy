@@ -8,7 +8,7 @@ function groupKey(r) {
   const base = r.name.toLowerCase()
     .replace(/\d+(\.\d+)?\s*(x|ml|l|pk|pack)\b/g, " ")
     .replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
-  return `${base}|${r.pack_count}|${r.size_ml}`;
+  return `${r.flavour}|${r.pack_count}|${r.size_ml}`;
 }
 
 function sizeLabel(r) {
@@ -31,6 +31,10 @@ async function load() {
 }
 
 function showStatus(data) {
+  if (!data.updated) {
+    $("updated").textContent = "No prices yet. The first automatic update hasn't run.";
+    return;
+  }
   const when = new Date(data.updated);
   $("updated").textContent = "Prices as of " + when.toLocaleString("en-NZ", {
     weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit",
@@ -52,8 +56,8 @@ function fillOptions(sel, values, fmt = (v) => v) {
 function fillFilters() {
   const uniq = (f) => [...new Set(state.items.map(f))].filter((v) => v !== "" && v != null);
   fillOptions($("chain"), uniq((r) => r.chain).sort());
+  fillOptions($("flavour"), uniq((r) => r.flavour).sort());
   fillOptions($("store"), uniq((r) => r.store_name).sort());
-  fillOptions($("pack"), uniq((r) => r.pack_count).sort((a, b) => a - b), (n) => (n === 1 ? "Single can" : n + "-pack"));
 }
 
 function filtered() {
@@ -61,8 +65,8 @@ function filtered() {
   return state.items.filter((r) =>
     (!q || r.name.toLowerCase().includes(q)) &&
     (!$("chain").value || r.chain === $("chain").value) &&
+    (!$("flavour").value || r.flavour === $("flavour").value) &&
     (!$("store").value || r.store_name === $("store").value) &&
-    (!$("pack").value || String(r.pack_count) === $("pack").value) &&
     (!$("specials").checked || r.on_special) &&
     (!$("hideout").checked || r.available));
 }
@@ -92,7 +96,8 @@ function render() {
     const isBest = r.available && r.price_per_can != null && r.price_per_can === best[groupKey(r)];
     const special = r.on_special;
     return `<tr class="${r.available ? "" : "out"}">
-      <td><span class="pname">${esc(r.name)}</span><span class="psize">${esc(sizeLabel(r))}</span></td>
+      <td><div class="prod"><div class="thumb">${r.image ? `<img src="${esc(r.image)}" alt="${esc(r.flavour)} Monster can" loading="lazy" referrerpolicy="no-referrer">` : ""}</div>
+        <div><span class="pname" title="${esc(r.name)}">${esc(r.flavour)}</span><span class="psize">${esc(sizeLabel(r))}</span></div></div></td>
       <td><div class="store"><span class="dot ${cls(r.chain)}"></span><div>${esc(r.chain)}<small>${esc(r.store_name)}</small></div></div></td>
       <td class="num"><span class="price ${special ? "special" : ""}">${r.available ? money(r.price) : "Unavailable"}</span>
         ${r.was_price ? `<span class="was">${money(r.was_price)}</span>` : ""}
@@ -117,7 +122,12 @@ document.querySelectorAll("th button").forEach((b) => b.addEventListener("click"
   state.sortKey = k;
   render();
 }));
-["q", "chain", "store", "pack", "specials", "hideout"].forEach((id) =>
+["q", "chain", "flavour", "store", "specials", "hideout"].forEach((id) =>
   $(id).addEventListener(id === "q" ? "input" : "change", render));
 
 load();
+
+// If a product photo fails to load, drop it and show the placeholder can.
+document.addEventListener("error", (e) => {
+  if (e.target.tagName === "IMG" && e.target.closest(".thumb")) e.target.remove();
+}, true);

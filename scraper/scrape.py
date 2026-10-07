@@ -35,27 +35,29 @@ def demo_rows():
     return {
         "Woolworths": [
             b("Woolworths", ws, "w1", "Monster Energy Drink Ultra White", 3.50, size_text="500ml can"),
-            b("Woolworths", ws, "w2", "Monster Energy Drink Original 4 x 500ml", 13.00, was_price=16.00),
-            b("Woolworths", ws, "w3", "Monster Energy Drink Original 12 x 500ml", 34.00),
+            b("Woolworths", ws, "w2", "Monster Energy Drink Original", 3.60, was_price=4.20, size_text="500ml can"),
+            b("Woolworths", ws, "w3", "Monster Energy Drink Mango Loco", 3.80, size_text="500ml can"),
+            b("Woolworths", ws, "w4", "Monster Energy Drink Original 4 x 500ml", 13.00),
         ],
         "New World": [
             b("New World", nw, "n1", "Monster Energy Drink Ultra White 500ml", 3.79),
-            b("New World", nw, "n2", "Monster Energy Drink Original 4 x 500ml", 14.99),
+            b("New World", nw, "n2", "Monster Energy Drink Original 500ml", 3.89),
+            b("New World", nw, "n3", "Monster Ultra Paradise 500ml", 3.79),
         ],
         "PAK'nSAVE": [
             b("PAK'nSAVE", ps, "p1", "Monster Energy Drink Ultra White 500ml", 3.29),
-            b("PAK'nSAVE", ps, "p2", "Monster Energy Drink Original 4 x 500ml", 12.50, was_price=15.99),
-            b("PAK'nSAVE", ps, "p3", "Monster Energy Drink Original 12 x 500ml", 35.00, promo_text="2 for $60"),
+            b("PAK'nSAVE", ps, "p2", "Monster Energy Drink Original 500ml", 3.29, was_price=3.89),
+            b("PAK'nSAVE", ps, "p3", "Monster Energy Drink Mango Loco 500ml", 3.49, promo_text="2 for $6"),
         ],
     }
 
 
 def real_rows():
-    term, delay = CONFIG["search_term"], CONFIG["request_delay_seconds"]
+    terms, delay = CONFIG["search_terms"], CONFIG["request_delay_seconds"]
     jobs = {
-        "Woolworths": lambda: woolworths.fetch(usable_stores(CONFIG["woolworths"]), term),
-        "New World": lambda: foodstuffs.fetch("New World", usable_stores(CONFIG["newworld"]), term),
-        "PAK'nSAVE": lambda: foodstuffs.fetch("PAK'nSAVE", usable_stores(CONFIG["paknsave"]), term),
+        "Woolworths": lambda: woolworths.fetch(usable_stores(CONFIG["woolworths"]), terms, delay),
+        "New World": lambda: foodstuffs.fetch("New World", usable_stores(CONFIG["newworld"]), terms, delay),
+        "PAK'nSAVE": lambda: foodstuffs.fetch("PAK'nSAVE", usable_stores(CONFIG["paknsave"]), terms, delay),
     }
     enabled = {"Woolworths": "woolworths", "New World": "newworld", "PAK'nSAVE": "paknsave"}
     out = {}
@@ -65,11 +67,13 @@ def real_rows():
         print(f"{chain}...")
         try:
             out[chain] = job()
-            print(f"  {len(out[chain])} Monster product(s)")
+            print(f"  {len(out[chain])} Monster product(s) parsed")
+            if not out[chain]:
+                print("  0 parsed: the response format probably differs from the adapter. "
+                      "Run with PROBE=1 to see the raw response.")
         except Exception as e:
             print(f"  FAILED: {e}")
             out[chain] = None
-        time.sleep(delay)
     return out
 
 
@@ -84,6 +88,9 @@ def main():
             rows += r
         else:
             failed.append(chain)
+    # Single cans only (multipacks are dropped after the success check above,
+    # so a chain that only returned multipacks isn't mistaken for an outage).
+    rows = [r for r in rows if r["pack_count"] == 1]
     common.write_snapshot(rows, ok, failed)
     common.upsert_history(rows, ok)
     print(f"Done. ok={ok} stale={failed}")

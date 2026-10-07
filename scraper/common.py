@@ -12,7 +12,7 @@ HISTORY = DATA_DIR / "history.csv"
 
 FIELDS = [
     "date", "chain", "store_id", "store_name", "region", "product_id", "barcode",
-    "name", "size_ml", "pack_count", "price", "was_price", "promo_text",
+    "name", "flavour", "image", "size_ml", "pack_count", "price", "was_price", "promo_text",
     "promo_ends", "on_special", "price_per_can", "price_per_100ml", "available",
 ]
 
@@ -50,7 +50,7 @@ def parse_size(text):
 
 
 def build_row(chain, store, product_id, name, price, barcode="", was_price=None,
-              promo_text="", promo_ends="", size_text="", available=True):
+              promo_text="", promo_ends="", size_text="", available=True, image=""):
     ml, pack = parse_size(f"{name} {size_text}")
     price = round(float(price), 2) if price is not None else None
     was_price = round(float(was_price), 2) if was_price else None
@@ -61,6 +61,7 @@ def build_row(chain, store, product_id, name, price, barcode="", was_price=None,
         "date": nz_today(), "chain": chain, "store_id": store["store_id"],
         "store_name": store["store_name"], "region": store.get("region", ""),
         "product_id": str(product_id), "barcode": barcode or "", "name": name,
+        "flavour": flavour(name), "image": image or "",
         "size_ml": ml, "pack_count": pack, "price": price, "was_price": was_price,
         "promo_text": promo_text or "", "promo_ends": promo_ends or "",
         "on_special": on_special, "price_per_can": per_can, "price_per_100ml": per_100,
@@ -68,8 +69,35 @@ def build_row(chain, store, product_id, name, price, barcode="", was_price=None,
     }
 
 
+# Known Monster flavours (longest match wins). Anything not listed still works:
+# the flavour is derived from the product name, so new flavours show up on their own.
+FLAVOURS = [
+    "Ultra White", "Ultra Paradise", "Ultra Violet", "Ultra Gold", "Ultra Red", "Ultra Blue",
+    "Ultra Fiesta", "Ultra Peachy Keen", "Ultra Rosa", "Ultra Strawberry Dreams", "Ultra Watermelon",
+    "Ultra Sunrise", "Ultra Black", "Ultra Zero", "Zero Sugar", "Mango Loco", "Pipeline Punch",
+    "Pacific Punch", "Aussie Lemonade", "Juiced Khaotic", "Juiced Monarch", "Juiced Bad Apple",
+    "Juiced Ripper", "Juiced Mule", "Rehab Peach Tea", "Rehab Lemonade", "Rehab Tea", "Java Mean Bean",
+    "Java Salted Caramel", "Reserve White Pineapple", "Reserve Watermelon", "Lewis Hamilton",
+    "Doctor", "Khaos", "Assault", "Absolutely Zero", "Original",
+]
+_EXCLUDE = ("munch", "mash", "truck", "toy")
+
+
 def is_monster(name):
-    return "monster" in (name or "").lower()
+    n = (name or "").lower()
+    return "monster" in n and not any(w in n for w in _EXCLUDE)
+
+
+def flavour(name):
+    n = (name or "").lower()
+    for f in sorted(FLAVOURS, key=len, reverse=True):
+        if f.lower() in n:
+            return f
+    t = re.sub(r"\b(monster|energy|drink|can|cans)\b", " ", n)
+    t = re.sub(r"\d+(\.\d+)?\s*(x|ml|l|pk|pack)\b", " ", t)
+    t = re.sub(r"[^a-z' ]", " ", t)
+    t = re.sub(r"\s+", " ", t).strip()
+    return t.title() if t else "Original"
 
 
 def _key(r):
@@ -127,3 +155,12 @@ def upsert_history(new_rows, ok_chains):
         w.writeheader()
         w.writerows(kept)
         w.writerows([{k: r.get(k, "") for k in FIELDS} for r in new_rows])
+
+
+def probe(label, response):
+    """Set PROBE=1 to print the raw response so adapters can be checked against the live site."""
+    import os
+    if os.environ.get("PROBE"):
+        print(f"--- PROBE {label}: HTTP {response.status_code} {response.url}")
+        print(response.text[:3000])
+        print("--- end probe")

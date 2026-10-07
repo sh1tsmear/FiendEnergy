@@ -1,26 +1,58 @@
 {
-  "search_term": "monster energy",
+  "search_terms": [
+    "monster energy",
+    "monster ultra",
+    "monster zero",
+    "monster juiced",
+    "monster mango loco"
+  ],
   "request_delay_seconds": 3,
   "woolworths": {
     "enabled": true,
     "note": "Woolworths NZ is one national site. UNVERIFIED endpoint: confirm in DevTools (see README).",
     "search_url": "https://www.woolworths.co.nz/api/v1/products",
-    "params": { "target": "search", "inputType": "search", "size": "48" },
-    "headers": { "x-requested-with": "OnlineShopping.WebApp" },
-    "stores": [ { "store_id": "national", "store_name": "Woolworths NZ (online)", "region": "National" } ]
+    "params": {
+      "target": "search",
+      "inputType": "search",
+      "size": "48"
+    },
+    "headers": {
+      "x-requested-with": "OnlineShopping.WebApp"
+    },
+    "stores": [
+      {
+        "store_id": "national",
+        "store_name": "Woolworths NZ (online)",
+        "region": "National"
+      }
+    ]
   },
   "newworld": {
     "enabled": true,
     "note": "Prices are per store. Replace REPLACE_ME with real store IDs (see README). UNVERIFIED endpoints.",
     "token_url": "https://www.newworld.co.nz/api/user/get-current-user",
     "search_url": "https://api-prod.newworld.co.nz/v1/edge/search/paginated/products",
-    "stores": [ { "store_id": "REPLACE_ME", "store_name": "New World (your store)", "region": "Your region" } ]
+    "stores": [
+      {
+        "store_id": "REPLACE_ME",
+        "store_name": "New World (your store)",
+        "region": "Your region"
+      }
+    ],
+    "stores_url": "https://api-prod.newworld.co.nz/v1/edge/store"
   },
   "paknsave": {
     "enabled": true,
     "note": "Same system as New World. Replace REPLACE_ME with real store IDs. UNVERIFIED endpoints.",
     "token_url": "https://www.paknsave.co.nz/api/user/get-current-user",
     "search_url": "https://api-prod.paknsave.co.nz/v1/edge/search/paginated/products",
-    "stores": [ { "store_id": "REPLACE_ME", "store_name": "PAK'nSAVE (your store)", "region": "Your region" } ]
+    "stores": [
+      {
+        "store_id": "REPLACE_ME",
+        "store_name": "PAK'nSAVE (your store)",
+        "region": "Your region"
+      }
+    ],
+    "stores_url": "https://api-prod.paknsave.co.nz/v1/edge/store"
   }
 }

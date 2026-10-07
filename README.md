@@ -23,10 +23,12 @@ Check each one:
 1. Open the chain's site, search "monster energy", press F12 → Network → Fetch/XHR.
 2. Find the request that returns the product list as JSON and compare it with
    the URL in `scraper/config.json` and the field names in `parse()`.
-3. Fix whatever differs, run `python scraper/scrape.py`, and check `data/prices.json`
+3. Run `PROBE=1 python scraper/scrape.py` (on Windows PowerShell: `$env:PROBE=1; python scraper/scrape.py`) to print each raw response, then fix whatever differs, run `python scraper/scrape.py`, and check `data/prices.json`
    against what the website shows.
 
-**New World / PAK'nSAVE store IDs:** while on the site with your store selected,
+**Find store IDs the easy way:** `python scraper/find_stores.py newworld tauranga` (or `paknsave`, with your suburb). If it prints nothing useful, use the DevTools method below.
+
+**New World / PAK'nSAVE store IDs (DevTools method):** while on the site with your store selected,
 the search request contains your store ID. Put it in `scraper/config.json`
 in place of `REPLACE_ME` (add more stores by copying the object).
 
@@ -40,3 +42,11 @@ chain fails. Check each site's terms of use, and keep the request rate low.
 - Products that disappear from a chain show as unavailable once, then drop off.
 - Running twice in one day replaces that day's rows instead of duplicating them.
 - Dates use New Zealand time.
+
+## Flavours and photos
+
+- Every Monster single the searches find is included. Flavours are read from the product
+  name, so new flavours appear on their own. The searches are listed in `search_terms`
+  in `scraper/config.json`; add more terms (e.g. a flavour name) to widen the net.
+- Can photos come from each chain's product data and are linked to, not copied into the repo.
+  If a photo is missing or fails to load, a plain can placeholder shows instead.
