@@ -50,7 +50,7 @@ def parse_size(text):
 
 
 def build_row(chain, store, product_id, name, price, barcode="", was_price=None,
-              promo_text="", promo_ends="", size_text="", available=True, image=""):
+              promo_text="", promo_ends="", size_text="", available=True, image="", variety=""):
     ml, pack = parse_size(f"{name} {size_text}")
     price = round(float(price), 2) if price is not None else None
     was_price = round(float(was_price), 2) if was_price else None
@@ -61,7 +61,7 @@ def build_row(chain, store, product_id, name, price, barcode="", was_price=None,
         "date": nz_today(), "chain": chain, "store_id": store["store_id"],
         "store_name": store["store_name"], "region": store.get("region", ""),
         "product_id": str(product_id), "barcode": barcode or "", "name": name,
-        "flavour": flavour(name), "image": image or "",
+        "flavour": flavour(name, variety), "image": image or "",
         "size_ml": ml, "pack_count": pack, "price": price, "was_price": was_price,
         "promo_text": promo_text or "", "promo_ends": promo_ends or "",
         "on_special": on_special, "price_per_can": per_can, "price_per_100ml": per_100,
@@ -88,11 +88,13 @@ def is_monster(name):
     return "monster" in n and not any(w in n for w in _EXCLUDE)
 
 
-def flavour(name):
+def flavour(name, variety=""):
     n = (name or "").lower()
     for f in sorted(FLAVOURS, key=len, reverse=True):
         if f.lower() in n:
             return f
+    if variety:  # the store's own flavour field, when it has one
+        return variety.strip().title()
     t = re.sub(r"\b(monster|energy|drink|can|cans)\b", " ", n)
     t = re.sub(r"\d+(\.\d+)?\s*(x|ml|l|pk|pack)\b", " ", t)
     t = re.sub(r"[^a-z' ]", " ", t)

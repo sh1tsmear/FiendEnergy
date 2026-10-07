@@ -17,7 +17,11 @@ def parse(data, store):
     for p in items:
         if p.get("type") not in (None, "Product"):
             continue
-        name = " ".join(filter(None, [p.get("brand"), p.get("name"), p.get("variety")]))
+        # Woolworths already puts brand and flavour inside "name"; only add the brand if missing.
+        name = p.get("name") or ""
+        brand = p.get("brand") or ""
+        if brand and brand.lower() not in name.lower():
+            name = f"{brand} {name}"
         if not is_monster(name):
             continue
         price_info = p.get("price") or {}
@@ -32,7 +36,8 @@ def parse(data, store):
             barcode=p.get("barcode", ""),
             was_price=original if special else None,
             size_text=size_text,
-            available=p.get("availabilityStatus", "In Stock") != "OutOfStock",
+            available=p.get("availabilityStatus", "In Stock") not in ("OutOfStock", "Out Of Stock", "Unavailable"),
+            variety=p.get("variety") or "",
             image=images.get("big") or images.get("small") or "",
         ))
     return rows
